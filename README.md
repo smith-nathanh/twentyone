@@ -1,11 +1,9 @@
 # twentyone
 *Toolbox for training reinforcement learning agents to play blackjack (otherwise known as twenty-one).*
 
-♠ ♣ ♦️ ♥️
+## The game
 
-## The game 
-
-### A standard "Bridge" set of cards:
+### A standard "Bridge" set of cards
 - numbered cards worth their value
 - face cards (K, Q, J) worth 10
 - Ace can be worth 1 or 11
