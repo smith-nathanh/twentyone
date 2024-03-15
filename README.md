@@ -1,5 +1,5 @@
 # twentyone
-Toolbox for training reinforcement learning agents to play blackjack (otherwise known as twenty-one). 
+**Toolbox for training reinforcement learning agents to play blackjack (otherwise known as twenty-one).**
 
 
 ## Summary of the Blackjack game
@@ -10,12 +10,15 @@ Toolbox for training reinforcement learning agents to play blackjack (otherwise 
 - Ace can be worth 1 or 11
 - Suits don’t matter
 - Value of a hand is the sum of the values of the cards held
-### 2 players (competitive, zero sum):
+
+### 2 players (competitive, zero sum)
 - Player (agent)
-- Dealer (in environment) 
-### Number of decks:
+- Dealer (in environment)
+
+### Number of decks
 - 6 decks of cards that gradually deplete until 2.4 decks (40% of original) remain, then original 6 decks are shuffled together and play resumes
-### Goal of players:
+
+### Goal of players
 - Draw cards as necessary to obtain hand with largest value 𝑃 without exceeding 21
 - Size the bet in order to maximize expected return based on the state of the deck
 
