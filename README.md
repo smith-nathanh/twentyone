@@ -1,7 +1,7 @@
 # twentyone
 *Toolbox for training reinforcement learning agents to play blackjack (otherwise known as twenty-one).*
 
-## The game
+## Details of the Game
 
 ### A standard "Bridge" set of cards
 - numbered cards worth their value
@@ -21,7 +21,7 @@
 - Draw cards as necessary to obtain hand with largest value 𝑃 without exceeding 21
 - Size the bet in order to maximize expected return based on the state of the deck
 
-## Sequence of play:
+## Sequence of Play
 - The player chooses how much to bet (bet sizes: 1 or 10)
 - Two cards are dealt to both the Player and the Dealer.  The second card dealt to the Dealer is placed face up (so that its value is known to both players).
 - If the Player has a value of 21 (i.e., an ace and a face card or 10), which is called a natural, and the Dealer does not have a natural, the Player wins 1.5x the bet and the episode is complete.  If both players have a natural, the episode is a tie.
