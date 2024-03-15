@@ -1,2 +1,2 @@
 # twentyone
-Package for training reinforcement learning agents to play blackjack (otherwise known as twenty-one). 
+Toolbox for training reinforcement learning agents to play blackjack (otherwise known as twenty-one). 
