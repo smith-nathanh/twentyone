@@ -33,6 +33,10 @@ def main():
     ------
     ValueError
         If environment and agent parameters do not match
+    
+    Example
+    -------
+    $ python play_the_game.py --algorithm MCC --num_agents 10 --num_episodes 2000 --gamma 0.1 --epsilon 0.2
     """
     parser = argparse.ArgumentParser(description="Blackjack RL Program")
     parser.add_argument("--algorithm", type=str, default="MCC", help="The algorithm to use: MCC, Q, or DQ")
@@ -41,7 +45,7 @@ def main():
     parser.add_argument("--alpha", type=float, default=0.1, help="Learning rate")
     parser.add_argument("--gamma", type=float, required=False, default=0.9, help="Discount factor")
     parser.add_argument("--epsilon", type=float, required=False, default=0.2, help="Exploration probability threshold")
-    parser.add_argument("--output_path", type=str, required=True, default='results/', help="Output path to save results")
+    parser.add_argument("--output_path", type=str, required=False, default='results/', help="Output path to save results")
     args = parser.parse_args()
     
     # iterate over the agents
