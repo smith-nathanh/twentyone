@@ -9,6 +9,7 @@ class MonteCarloControl:
         self.n_table = np.zeros((self.num_states, self.num_actions)) # initialize n_table with zeros
         self.gamma = gamma
         self.epsilon = epsilon
+        self.trajectory = []
     
     def get_number_of_states(self):
         return self.num_states
@@ -36,6 +37,10 @@ class MonteCarloControl:
         return action
 
     def update(self, state, action, reward, new_state=None):
+        """
+        For MCC, which performs its table updates after the episode, 
+        the update method only appends to the trajectory.
+        """
         self.trajectory.append((state, action, reward))
 
     def update_tables(self):
