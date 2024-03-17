@@ -1,20 +1,8 @@
 from twentyone.environment import Blackjack
-from twentyone.agents import MonteCarloControl, QLearning, DeepQLearning
+from twentyone.agents import initialize_agent
 import argparse
 from collections import defaultdict
 import json
-
-
-def initialize_agent(args, environment):
-    if args.algorithm == 'MCC':
-        agent = MonteCarloControl(environment, args.gamma, args.epsilon)
-    elif args.algorithm == 'Q':
-        agent = QLearning(environment, args.alpha, args.gamma, args.epsilon)
-    elif args.algorithm == 'MCC':
-        agent = DeepQLearning(environment, args.alpha, args.gamma, args.epsilon) # just placeholder args for now
-    else:
-        raise ValueError('Algorithm must be one of MCC, Q, DQ.')
-    return agent
     
 
 def main():
@@ -53,7 +41,7 @@ def main():
 
         # initialize the environment and agent
         environment = Blackjack()
-        agent = initialize_agent(args, environment)
+        agent = initialize_agent(environment, args)
     
         # play the episodes
         wins = 0

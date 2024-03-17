@@ -1,5 +1,18 @@
 import numpy as np
 
+
+def initialize_agent(environment, args):
+    if args.algorithm == 'MCC':
+        agent = MonteCarloControl(environment, args.gamma, args.epsilon)
+    elif args.algorithm == 'Q':
+        agent = QLearning(environment, args.alpha, args.gamma, args.epsilon)
+    elif args.algorithm == 'MCC':
+        agent = DeepQLearning(environment, args.alpha, args.gamma, args.epsilon) # just placeholder args for now
+    else:
+        raise ValueError('Algorithm must be one of MCC, Q, DQ.')
+    return agent
+
+
 class MonteCarloControl:
     def __init__(self, env, gamma=1, epsilon=0.2):
         self.env = env
