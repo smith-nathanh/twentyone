@@ -70,6 +70,7 @@ class MonteCarloControl:
                 self.update_q(state, action, G)
             else:
                 print(f"Already visited ({state}, {action})")
+        self.trajectory = [] # reset trajectory
 
     def update_q(self, state, action, G):
         q = self.q_table[state, action]
@@ -82,7 +83,39 @@ class MonteCarloControl:
 
 class QLearning:
     def __init__(self, env, alpha=0.1, gamma=1, epsilon=0.2):
-        self.action = None
+        self.env = env
+        self.num_states = env.get_number_of_states()
+        self.num_actions = env.get_number_of_actions()
+        self.q_table = np.zeros((self.num_states, self.num_actions)) # initialize q_table with zeros
+        self.alpha = alpha # learning rate
+        self.gamma = gamma # discount rate
+        self.epsilon = epsilon # exploration probability threshold
+        self.action = None 
+
+    def e_greedy(self, actions):
+        """
+        Epsilon-greedy decision policy using epsilon threshold and uniform distribution 
+        to select between exploration and exploitation.
+        """
+        # if all q values are the same, break ties randomly and exit early
+        if len(set(actions)) == 1: 
+            return np.random.randint(0, self.num_actions)
+        b = np.random.default_rng().uniform(low=0, high=1, size=1)
+        if b > self.epsilon: # exploit
+            return np.argmax(actions)
+        else: # explore
+            return np.random.randint(0, self.num_actions) 
+
+    def select_action(self, state):
+        actions = self.q_table[state, ]
+        action = self.e_greedy(actions)
+        return action
+
+    def update(self, state, action, reward, new_state):
+        q = self.q_table[state, action]
+        self.q_table[state, action] = q + self.alpha*(reward + self.gamma*np.max(self.q_table[new_state, ]) - q)
+
+
 
 
 class DeepQLearning:

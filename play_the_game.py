@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--algorithm", type=str, default="MCC", help="The algorithm to use: MCC, Q, or DQ")
     parser.add_argument("--num_agents", type=int, default=10, help="Number of agents to train")
     parser.add_argument("--num_episodes", type=int, default=2000, help="Number of episodes to play")
-    parser.add_argument("--alpha", type=float, default=0.1, help="Learning rate")
+    parser.add_argument("--alpha", type=float, required=False, default=None, help="Learning rate")
     parser.add_argument("--gamma", type=float, required=False, default=0.9, help="Discount factor")
     parser.add_argument("--epsilon", type=float, required=False, default=0.2, help="Exploration probability threshold")
     parser.add_argument("--output_path", type=str, required=False, default='results/', help="Output path to save results")
@@ -45,7 +45,7 @@ def main():
     
         # play the episodes
         wins = 0
-        cumulative_return = 0
+        cumulative_reward = 0
         metrics = defaultdict(list)
         for e in range(args.num_episodes):
             current_state = environment.reset()
@@ -53,7 +53,7 @@ def main():
             while not game_end:
                 action = agent.select_action(current_state)
                 new_state, reward, game_end = environment.execute_action(action)
-                agent.update((current_state, action, reward, new_state))
+                agent.update(current_state, action, reward, new_state)
                 current_state = new_state
 
             # MCC performs its updates after the episode
@@ -62,19 +62,20 @@ def main():
 
             # record a win if episode ended with a reward
             wins += 1 if reward == 1 else 0
+            cumulative_reward += reward
 
             # record the metrics
             metrics['Win_Percentage'].append(wins/(e+1))
-            metrics['Cumulative_Return'].append(cumulative_return)
+            metrics['Cumulative_Reward'].append(cumulative_reward)
 
             # print metrics
             if e % 100 == 0 or e == args.num_episodes - 1:
                 print((f"Episode {e} --- Win Percentage: {metrics['Win_Percentage'][-1]:.3f}, " 
-                       f"Cumulative Return: {metrics['Cumulative_Return'][-1]}, "))
+                       f"Cumulative Reward: {metrics['Cumulative_Reward'][-1]}, "))
         
         # write results to files
-        filename = f'{args.output_path}/Agent_{i}_{args.epsilon}_Metrics.json'
-        with open(filename, 'wt') as f:
+        agent_args = f"{args.algorithm}_{args.num_episodes}_{args.alpha}_{args.gamma}_{args.epsilon}"
+        with open(f'results/Agent_{i}_{agent_args}.json', 'wt') as f:
             json.dump(metrics, f, indent=4)
         
         print(f"Agent {i} trained successfully.\n")
