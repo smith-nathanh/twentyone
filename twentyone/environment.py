@@ -1,4 +1,16 @@
-import numpy as np
+"""
+Filename:
+
+Project:
+
+Description:
+
+Author:
+
+Date:
+"""
+
+import math
 import random
 
 
@@ -7,16 +19,19 @@ class CardDeck:
 
     def __init__(self):
 
+        # 1 deck of cards
         self.cards = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,
                       6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10,
                       10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-        self.deal_seq = []
 
-    def shuffle_cards(self):
-        self.deal_seq = random.sample(self.cards, 24)
+        # 6 decks of cards
+        self.cards = [card for card in self.cards for _ in range(6)]
+
+        # shuffle the cards
+        random.shuffle(self.cards)
 
     def deal_card(self):
-        return self.deal_seq.pop(0)
+        return self.cards.pop(0)
 
 
 class Blackjack:
@@ -29,17 +44,6 @@ class Blackjack:
         self.dealer_total = 0
         self.dealer_ace = 0
         self.current_state = 0
-        self.num_states = 204
-        self.num_actions = 2
-
-    def get_number_of_states(self):
-        return self.num_states
-
-    def get_number_of_actions(self):
-        return self.num_actions
-
-    def get_state(self):
-        return self.current_state
 
     def get_state_index(self):
         a_idx = self.agent_total - 12
@@ -47,21 +51,20 @@ class Blackjack:
         u_idx = 100 * self.usable_ace
         return a_idx + d_idx + u_idx
 
-    def get_next_state(self):
+    def get_next_state(self, open_cards):
         new_card = self.deck.deal_card()
+        open_cards.append(new_card)
         self.agent_total += new_card
         if self.agent_total > 21 and self.usable_ace == 1:
             self.usable_ace = 0
             self.agent_total -= 10
-        # print("Agent drew a", new_card, "and now has", self.agent_total, "points.")
         if self.agent_total > 21:
             new_state = 201      # 201 is the losing state
         else:
             new_state = self.get_state_index()
-        return new_state
+        return new_state, open_cards
 
     def reset(self):
-        self.deck.shuffle_cards()
         self.agent_total = 0
         self.usable_ace = 0
         self.dealer_card = 0
@@ -76,18 +79,15 @@ class Blackjack:
         if self.dealer_card == 1 or d_card_2 == 1:
             self.dealer_ace = 1
             self.dealer_total += 10
-        # print("Dealer has", self.dealer_card, "and", d_card_2)
-        # print("Dealer has", self.dealer_total, "points.")
 
         # deal two cards to the agent
         card_1 = self.deck.deal_card()
         card_2 = self.deck.deal_card()
+        open_cards = [d_card_2, card_1, card_2]
         self.agent_total = card_1 + card_2
         if card_1 == 1 or card_2 == 1:
             self.usable_ace = 1
             self.agent_total += 10
-        # print("Agent has", card_1, "and", card_2)
-        # print("Agent has", self.agent_total, "points.")
 
         # check to see if the agent has a natural (ace + face card)
         if self.agent_total == 21:
@@ -100,24 +100,30 @@ class Blackjack:
         else:
             while self.agent_total < 12:
                 new_card = self.deck.deal_card()
+                open_cards.append(new_card)
                 self.agent_total += new_card
                 if new_card == 1 and self.usable_ace == 0 and self.agent_total < 12:
                     self.usable_ace = 1
                     self.agent_total += 10
-                # print("Agent drew a", new_card, "and now has", self.agent_total, "points.")
+
             # now determine the initial state
             self.current_state = self.get_state_index()
 
         # reset complete; return the initial state
-        return self.current_state
+        return self.current_state, open_cards
 
     # Use the agent's action to determine the next state and reward
     def execute_action(self, action):
+        new_state = -1
+        reward = math.inf
+        open_cards = []
+
         # action is 'stick'
         if action == 0:
             # dealer's turn
             while self.dealer_total < 17:
                 new_card = self.deck.deal_card()
+                open_cards.append(new_card)
                 self.dealer_total += new_card
                 if new_card == 1 and self.dealer_ace == 0 and self.dealer_total < 12:
                     self.dealer_ace = 1
@@ -129,36 +135,29 @@ class Blackjack:
                 # dealer busted; agent wins
                 new_state = 203
                 reward = 1
-                game_end = True
             else:
                 if self.dealer_total > self.agent_total:
                     # dealer wins
                     new_state = 201
                     reward = -1
-                    game_end = True
                 elif self.dealer_total < self.agent_total:
                     # agent wins
                     new_state = 203
                     reward = 1
-                    game_end = True
                 else:
                     # tie
                     new_state = 202
                     reward = 0
-                    game_end = True
 
         # action is 'hit'
         elif action == 1:
-            new_state = self.get_next_state()
+            new_state, open_cards = self.get_next_state(open_cards)
             if new_state == 201:
                 reward = -1
-                game_end = True
             else:
                 reward = 0
-                game_end = False
 
-        # print("new_state =", new_state, "reward = ", reward, "game_end =", game_end)
         self.current_state = new_state
-        return new_state, reward, game_end
+        return new_state, reward, open_cards
 
 
