@@ -24,7 +24,7 @@ def main():
     
     Example
     -------
-    $ python play_the_game.py --algorithm MCC --num_agents 10 --num_episodes 2000 --gamma 0.1 --epsilon 0.2
+    $ python play_the_game.py --algorithm MCC --num_agents 10 --num_episodes 2000 --gamma 0.9 --epsilon 0.2
     """
     parser = argparse.ArgumentParser(description="Blackjack RL Program")
     parser.add_argument("--algorithm", type=str, default="MCC", help="The algorithm to use: MCC, Q, or DQ")

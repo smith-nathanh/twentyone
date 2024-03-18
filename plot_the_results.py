@@ -19,6 +19,10 @@ def get_agent_metrics(agent_num, args):
 def plot_metrics():
     """
     Plot all the metrics for the agents and the average
+
+    Example
+    ------
+    $ python plot_the_results.py --algorithm MCC --num_agents 10 --num_episodes 2000 --gamma 0.9 --epsilon 0.2
     """
     parser = argparse.ArgumentParser(description="Gather results from training agents and plot the metrics")
     parser.add_argument("--algorithm", type=str, default="S", help="The algorithm to use ('S': Sarsa or 'Q': Q-learning)")
