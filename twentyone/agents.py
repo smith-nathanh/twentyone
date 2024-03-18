@@ -116,8 +116,6 @@ class QLearning:
         self.q_table[state, action] = q + self.alpha*(reward + self.gamma*np.max(self.q_table[new_state, ]) - q)
 
 
-
-
 class DeepQLearning:
     def __init__(self, env, alpha=0.1, gamma=1, epsilon=0.2):
         self.action = None
