@@ -15,10 +15,19 @@ def initialize_agent(environment, args):
 
 class BaseAgent:
     def __init__(self):
-        self.action = None
+        self.hi_lo_count = 0
+    
+    def update_count(self, cards):
+        count = 0
+        for card in cards:  # CHECK THIS. DO WE WANT TO ITERATE OVER CARDS? AREN'T they laid down one at a time?
+            if card == 1 or card == 10:
+                count -= 1
+            elif 2 <= card <= 6:
+                count += 1
+        return count
 
 
-class MonteCarloControl:
+class MonteCarloControl(BaseAgent):
     def __init__(self, env, gamma=1, epsilon=0.2):
         self.env = env
         self.num_states = env.get_number_of_states()
@@ -86,7 +95,7 @@ class MonteCarloControl:
         self.n_table[state, action] += 1
 
 
-class QLearning:
+class QLearning(BaseAgent):
     def __init__(self, env, alpha=0.1, gamma=1, epsilon=0.2):
         self.env = env
         self.num_states = env.get_number_of_states()
@@ -121,7 +130,7 @@ class QLearning:
         self.q_table[state, action] = q + self.alpha*(reward + self.gamma*np.max(self.q_table[new_state, ]) - q)
 
 
-class DeepQLearning:
+class DeepQLearning(BaseAgent):
     def __init__(self, env, alpha=0.1, gamma=1, epsilon=0.2):
         self.action = None
 
