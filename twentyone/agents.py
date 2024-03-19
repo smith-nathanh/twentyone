@@ -13,6 +13,11 @@ def initialize_agent(environment, args):
     return agent
 
 
+class BaseAgent:
+    def __init__(self):
+        self.action = None
+
+
 class MonteCarloControl:
     def __init__(self, env, gamma=1, epsilon=0.2):
         self.env = env
