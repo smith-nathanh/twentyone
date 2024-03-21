@@ -56,9 +56,10 @@ def main():
         for episode in range(args.num_episodes):
             current_state = environment.reset()
             game_end = False
+            bet_size = agent.select_bet_size(environment.open_cards)
             while not game_end:
                 action = agent.select_action(current_state)
-                new_state, reward, game_end = environment.execute_action(action)
+                new_state, reward, game_end = environment.execute_action(action, bet_size)
                 agent.update(current_state, action, reward, new_state)
                 current_state = new_state
 
