@@ -1,8 +1,11 @@
+
+import argparse
+import json
+import math
+from collections import defaultdict
 from twentyone.environment import Blackjack
 from twentyone.agents import initialize_agent
-import argparse
-from collections import defaultdict
-import json
+
     
 
 def main():
@@ -16,6 +19,8 @@ def main():
         --alpha: Learning rate
         --gamma: Discount factor 
         --epsilon: Exploration probability threshold
+        --decay_epsilon: Flag to decay epsilon or not
+        --output_path: Output path to save results
 
     Raises
     ------
@@ -33,6 +38,7 @@ def main():
     parser.add_argument("--alpha", type=float, required=False, default=None, help="Learning rate")
     parser.add_argument("--gamma", type=float, required=False, default=0.9, help="Discount factor")
     parser.add_argument("--epsilon", type=float, required=False, default=0.2, help="Exploration probability threshold")
+    parser.add_argument("--decay_epsilon", action='store_true', default=False, required=False, help="Flag to decay epsilon or not")
     parser.add_argument("--output_path", type=str, required=False, default='results/', help="Output path to save results")
     args = parser.parse_args()
     
@@ -47,7 +53,7 @@ def main():
         wins = 0
         cumulative_reward = 0
         metrics = defaultdict(list)
-        for e in range(args.num_episodes):
+        for episode in range(args.num_episodes):
             current_state = environment.reset()
             game_end = False
             while not game_end:
@@ -59,18 +65,21 @@ def main():
             # MCC performs its updates after the episode
             if args.algorithm == 'MCC':
                 agent.update_tables()
+            
+            # decay epsilon if requested
+            agent.epsilon = agent.epsilon*math.exp(math.log(0.01/agent.epsilon)/args.num_episodes) if args.decay_epsilon else agent.epsilon
 
             # record a win if episode ended with a reward
             wins += 1 if reward == 1 else 0
             cumulative_reward += reward
 
             # record the metrics
-            metrics['Win_Percentage'].append(wins/(e+1))
+            metrics['Win_Percentage'].append(wins/(episode+1))
             metrics['Cumulative_Reward'].append(cumulative_reward)
 
             # print metrics
-            if e % 100 == 0 or e == args.num_episodes - 1:
-                print((f"Episode {e} --- Win Percentage: {metrics['Win_Percentage'][-1]:.3f}, " 
+            if episode % 100 == 0 or episode == args.num_episodes - 1:
+                print((f"Episode {episode} --- Win Percentage: {metrics['Win_Percentage'][-1]:.3f}, " 
                        f"Cumulative Reward: {metrics['Cumulative_Reward'][-1]}, "))
         
         # write results to files

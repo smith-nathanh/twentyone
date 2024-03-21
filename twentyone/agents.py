@@ -14,24 +14,31 @@ def initialize_agent(environment, args):
 
 
 class BaseAgent:
-    def __init__(self):
-        self.hi_lo_count = 0
-    
-    def update_count(self, cards):
-        count = 0
-        for card in cards:  # CHECK THIS. DO WE WANT TO ITERATE OVER CARDS? AREN'T they laid down one at a time?
-            if card == 1 or card == 10:
-                count -= 1
-            elif 2 <= card <= 6:
-                count += 1
-        return count
-
-
-class MonteCarloControl(BaseAgent):
-    def __init__(self, env, gamma=1, epsilon=0.2):
+    """BaseAgent comes with the ability to count cards using the hi-lo method."""
+    def __init__(self, env, hi_lo=False):
         self.env = env
         self.num_states = env.get_number_of_states()
         self.num_actions = env.get_number_of_actions()
+        self.hi_lo = hi_lo
+        self.hi_lo_count = 0
+    
+    def update_hi_lo_count(self, cards):
+        for card in cards:
+            if card == 1 or card == 10:
+                self.hi_lo_count -= 1
+            elif 2 <= card <= 6:
+                self.hi_lo_count += 1
+    
+    def determine_bet_size(self):
+        # at the start of each hand, we reset the agent's policy and retrieve the bet size
+        true_count = round(self.hi_lo_count/(len(self.env.deck.cards)/52)) + 15
+        true_count = min(max(true_count, 0), 29)
+        # WHAT DO WE NEED HERE? 
+
+
+class MonteCarloControl(BaseAgent):
+    def __init__(self, env, hi_lo, gamma=1, epsilon=0.2):
+        super().__init__(env, hi_lo)
         self.q_table = np.zeros((self.num_states, self.num_actions)) # initialize q_table with zeros
         self.n_table = np.zeros((self.num_states, self.num_actions)) # initialize n_table with zeros
         self.gamma = gamma
@@ -59,6 +66,8 @@ class MonteCarloControl(BaseAgent):
             return np.random.randint(0, self.num_actions) 
 
     def select_action(self, state):
+        if self.hi_lo:
+            self.update_hi_lo_count()  # NOW YOU CAN ADD self.hi_lo_count TO THE STATE INPUT TO INFLUENCE THE DECISION
         actions = self.q_table[state, ]
         action = self.e_greedy(actions)
         return action
@@ -96,10 +105,8 @@ class MonteCarloControl(BaseAgent):
 
 
 class QLearning(BaseAgent):
-    def __init__(self, env, alpha=0.1, gamma=1, epsilon=0.2):
-        self.env = env
-        self.num_states = env.get_number_of_states()
-        self.num_actions = env.get_number_of_actions()
+    def __init__(self, env, hi_lo, alpha=0.1, gamma=1, epsilon=0.2):
+        super().__init__(env, hi_lo)
         self.q_table = np.zeros((self.num_states, self.num_actions)) # initialize q_table with zeros
         self.alpha = alpha # learning rate
         self.gamma = gamma # discount rate
@@ -121,6 +128,8 @@ class QLearning(BaseAgent):
             return np.random.randint(0, self.num_actions) 
 
     def select_action(self, state):
+        if self.hi_lo:
+            self.update_hi_lo_count()  # NOW YOU CAN ADD self.hi_lo_count TO THE STATE INPUT TO INFLUENCE THE DECISION
         actions = self.q_table[state, ]
         action = self.e_greedy(actions)
         return action
