@@ -21,6 +21,7 @@ class BaseAgent:
         self.num_actions = env.get_number_of_actions()
         self.hi_lo = hi_lo
         self.hi_lo_count = 0
+        self.count_state = 0
     
     def update_hi_lo_count(self, cards):
         for card in cards:
@@ -29,11 +30,10 @@ class BaseAgent:
             elif 2 <= card <= 6:
                 self.hi_lo_count += 1
     
-    def determine_bet_size(self):
-        # at the start of each hand, we reset the agent's policy and retrieve the bet size
+    def calculate_true_count(self):
         true_count = round(self.hi_lo_count/(len(self.env.deck.cards)/52)) + 15
         true_count = min(max(true_count, 0), 29)
-        # WHAT DO WE NEED HERE? 
+        return true_count
 
 
 class MonteCarloControl(BaseAgent):
@@ -63,11 +63,17 @@ class MonteCarloControl(BaseAgent):
         if b > self.epsilon: # exploit
             return np.argmax(actions)
         else: # explore
-            return np.random.randint(0, self.num_actions) 
+            return np.random.randint(0, self.num_actions)
+    
+    def select_bet_size(self, open_cards):
+        self.update_hi_lo_count(open_cards)
+        true_count = self.calculate_true_count
+        self.count_state = true_count if self.hi_lo else self.count_state
+        actions = self.q[self.count_state][200, ]
+        action = self.e_greedy(actions)
+        return self.env.bet_sizes[action]
 
     def select_action(self, state):
-        if self.hi_lo:
-            self.update_hi_lo_count()  # NOW YOU CAN ADD self.hi_lo_count TO THE STATE INPUT TO INFLUENCE THE DECISION
         actions = self.q_table[state, ]
         action = self.e_greedy(actions)
         return action

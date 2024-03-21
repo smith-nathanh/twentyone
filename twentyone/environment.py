@@ -30,9 +30,9 @@ class Blackjack:
         self.dealer_total = 0
         self.dealer_ace = 0
         self.current_state = 0
-        self.bet_sizes = bet_sizes*2 # repeat the list sequence for stick and bet options
+        self.bet_sizes = bet_sizes
         self.num_states = 204
-        self.num_actions = len(self.bet_sizes) # stick_bet_1, stick_bet_5, stick_bet_10, hit_bet_1, hit_bet_5, hit_bet_10
+        self.num_actions = 2
         self.open_cards = []
         self.agent_natural = False
         
@@ -112,12 +112,12 @@ class Blackjack:
         return self.current_state
 
     # Use the agent's action to determine the next state and reward
-    def execute_action(self, action):
+    def execute_action(self, action, bet_size):
 
-        open_cards = []
+        self.open_cards = []
 
         # action is 'stick'
-        if action < len(self.num_actions)/2:  # if action == 0:
+        if action == 0:
             # dealer's turn
             while self.dealer_total < 17:
                 new_card = self.deck.deal_card()
@@ -132,18 +132,18 @@ class Blackjack:
             if self.dealer_total > 21:
                 # dealer busted; agent wins
                 new_state = 203
-                reward = 1*self.bet_sizes[action]
+                reward = 1*bet_size
                 game_end = True
             else:
                 if self.dealer_total > self.agent_total:
                     # dealer wins
                     new_state = 201
-                    reward = -1*self.bet_sizes[action]
+                    reward = -1*bet_size
                     game_end = True
                 elif self.dealer_total < self.agent_total:
                     # agent wins
                     new_state = 203
-                    reward = 1*self.bet_sizes[action]
+                    reward = 1*bet_size
                     game_end = True
                 else:
                     # tie
@@ -152,10 +152,10 @@ class Blackjack:
                     game_end = True
 
         # action is 'hit'
-        elif action <= len(self.bet_sizes)/2:
+        elif action == 1:
             new_state = self.get_next_state()
             if new_state == 201:
-                reward = -1*self.bet_sizes[action]
+                reward = -1*bet_size
                 game_end = True
             else:
                 reward = 0
