@@ -23,18 +23,15 @@ class BaseAgent:
         self.hi_lo_count = 0
         self.count_state = 0
     
-    def update_hi_lo_count(self, cards):
+    def get_true_count(self, cards):
         for card in cards:
             if card == 1 or card == 10:
                 self.hi_lo_count -= 1
             elif 2 <= card <= 6:
                 self.hi_lo_count += 1
-    
-    def calculate_true_count(self):
         true_count = round(self.hi_lo_count/(len(self.env.deck.cards)/52)) + 15
         true_count = min(max(true_count, 0), 29)
         return true_count
-
 
 class MonteCarloControl(BaseAgent):
     def __init__(self, env, hi_lo, gamma=1, epsilon=0.2):
@@ -66,9 +63,7 @@ class MonteCarloControl(BaseAgent):
             return np.random.randint(0, self.num_actions)
     
     def select_bet_size(self, open_cards):
-        self.update_hi_lo_count(open_cards)
-        true_count = self.calculate_true_count
-        self.count_state = true_count if self.hi_lo else self.count_state
+        self.count_state = self.get_true_count(open_cards) if self.hi_lo else self.count_state
         actions = self.q[self.count_state][200, ]
         action = self.e_greedy(actions)
         return self.env.bet_sizes[action]
