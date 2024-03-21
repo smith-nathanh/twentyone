@@ -30,13 +30,31 @@ class CardDeck:
         # shuffle the cards
         random.shuffle(self.cards)
 
-    def deal_card(self):
-        return self.cards.pop(0)
+        self.card_state = [
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            96,
+        ]
+
+    def deal_card(self, is_hidden):
+        card = self.cards.pop(0)
+        if not is_hidden:
+            self.card_state[card - 1] -= 1
+        return card
+
+    def reveal_hidden_card(self, card):
+        self.card_state[card - 1] -= 1
 
 
 class Blackjack:
     def __init__(self):
-
         self.deck = CardDeck()
         self.agent_total = 0
         self.usable_ace = 0
@@ -45,6 +63,9 @@ class Blackjack:
         self.dealer_ace = 0
         self.current_state = 0
 
+    def get_card_state(self):
+        return self.deck.card_state
+
     def get_state_index(self):
         a_idx = self.agent_total - 12
         d_idx = 10 * (self.dealer_card - 1)
@@ -52,7 +73,7 @@ class Blackjack:
         return a_idx + d_idx + u_idx
 
     def get_next_state(self, open_cards):
-        new_card = self.deck.deal_card()
+        new_card = self.deck.deal_card(False)
         open_cards.append(new_card)
         self.agent_total += new_card
         if self.agent_total > 21 and self.usable_ace == 1:
@@ -60,6 +81,7 @@ class Blackjack:
             self.agent_total -= 10
         if self.agent_total > 21:
             new_state = 201      # 201 is the losing state
+            self.deck.reveal_hidden_card(self.dealer_card)
         else:
             new_state = self.get_state_index()
         return new_state, open_cards
@@ -73,16 +95,16 @@ class Blackjack:
         self.current_state = 0
 
         # deal a face up card and a second card to the dealer
-        self.dealer_card = self.deck.deal_card()
-        d_card_2 = self.deck.deal_card()
+        self.dealer_card = self.deck.deal_card(True)
+        d_card_2 = self.deck.deal_card(False)
         self.dealer_total = self.dealer_card + d_card_2
         if self.dealer_card == 1 or d_card_2 == 1:
             self.dealer_ace = 1
             self.dealer_total += 10
 
         # deal two cards to the agent
-        card_1 = self.deck.deal_card()
-        card_2 = self.deck.deal_card()
+        card_1 = self.deck.deal_card(False)
+        card_2 = self.deck.deal_card(False)
         open_cards = [d_card_2, card_1, card_2]
         self.agent_total = card_1 + card_2
         if card_1 == 1 or card_2 == 1:
@@ -95,11 +117,12 @@ class Blackjack:
                 self.current_state = 202    # tie game
             else:
                 self.current_state = 203    # agent wins
+            self.deck.reveal_hidden_card(self.dealer_card)
 
         # otherwise, deal enough cards to the agent so that the total is >11
         else:
             while self.agent_total < 12:
-                new_card = self.deck.deal_card()
+                new_card = self.deck.deal_card(False)
                 open_cards.append(new_card)
                 self.agent_total += new_card
                 if new_card == 1 and self.usable_ace == 0 and self.agent_total < 12:
@@ -122,7 +145,7 @@ class Blackjack:
         if action == 0:
             # dealer's turn
             while self.dealer_total < 17:
-                new_card = self.deck.deal_card()
+                new_card = self.deck.deal_card(False)
                 open_cards.append(new_card)
                 self.dealer_total += new_card
                 if new_card == 1 and self.dealer_ace == 0 and self.dealer_total < 12:
@@ -156,6 +179,9 @@ class Blackjack:
                 reward = -1
             else:
                 reward = 0
+
+        if new_state > 200:
+            self.deck.reveal_hidden_card(self.dealer_card)
 
         self.current_state = new_state
         return new_state, reward, open_cards

@@ -19,11 +19,11 @@ class RLAgent:
     def __init__(self, hi_lo):
         self.hi_lo = hi_lo
         if self.hi_lo:
-            self.q = [np.zeros((204, 3), dtype="float64") for _ in range(30)]  # the q value for each state-action
-            self.q_count = [np.zeros((201, 3), dtype="float64") for _ in range(30)]  # for tracking how many visits the agent has made to each state-action
+            self.q = [np.zeros((204, 2), dtype="float64") for _ in range(30)]  # the q value for each state-action
+            self.q_count = [np.zeros((201, 2), dtype="float64") for _ in range(30)]  # for tracking how many visits the agent has made to each state-action
         else:
-            self.q = [np.zeros((204, 3), dtype="float64")]  # the q value for each state-action
-            self.q_count = [np.zeros((201, 3), dtype="float64")]  # for tracking how many visits the agent has made to each state-action
+            self.q = [np.zeros((204, 2), dtype="float64")]  # the q value for each state-action
+            self.q_count = [np.zeros((201, 2), dtype="float64")]  # for tracking how many visits the agent has made to each state-action
         self.count_state = 0
         self.hand_state = 0
         self.reward = 0
@@ -31,7 +31,7 @@ class RLAgent:
         self.epsilon = 0.2
         self.gamma = 1
         self.current_policy = []
-        self.bet_choice = [1, 5, 10]
+        self.bet_choice = [1, 10]
 
     def set_epsilon(self, new_epsilon):
         self.epsilon = new_epsilon
@@ -49,9 +49,8 @@ class RLAgent:
         # select a bet size for this hand with epsilon greedy
         actions = self.q[self.count_state][200, ]
         action = self.e_greedy(actions)
-        self.store_policy(200, action, 0)
 
-        return self.bet_choice[action]
+        return self.bet_choice[action], action
 
     def e_greedy(self, actions):
         """
