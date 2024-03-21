@@ -5,32 +5,36 @@ import random
 class CardDeck:
     """For shuffling and dealing cards"""
 
-    def __init__(self, num_decks=6):
-        self.cards = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,
-                      6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10,
-                      10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+    def __init__(self, num_decks):
+        self.standard_deck = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,
+                                6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10,
+                                10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+        self.cards = self.refresh_the_deck()
         self.num_decks = num_decks
-        self.cards = [card for card in self.cards for _ in range(self.num_decks)]
-        self.deal_seq = []
+        self.fresh_deck = True
 
-    def shuffle_cards(self):
-        self.deal_seq = random.sample(self.cards, len(self.cards))
+    def refresh_the_deck(self):
+        self.cards = np.random.shuffle([card for card in self.standard_deck for _ in range(self.num_decks)])
+
+    def check_remaining_cards(self):
+        self.fresh_deck = False if len(self.cards) > len(self.cards)*.4 else True
+        if self.fresh_deck:
+            self.refresh_the_deck()
 
     def deal_card(self):
-        return self.deal_seq.pop(0)
+        return self.cards.pop(0)
 
 
 class Blackjack:
-    def __init__(self, bet_sizes=[1, 5, 10]):
+    def __init__(self, num_decks=6):
 
-        self.deck = CardDeck()
+        self.deck = CardDeck(num_decks)
         self.agent_total = 0
         self.usable_ace = 0
         self.dealer_card = 0
         self.dealer_total = 0
         self.dealer_ace = 0
         self.current_state = 0
-        self.bet_sizes = bet_sizes
         self.num_states = 204
         self.num_actions = 2
         self.open_cards = []
@@ -64,13 +68,14 @@ class Blackjack:
         return new_state
 
     def reset(self):
-        self.deck.shuffle_cards()
+        self.deck.check_remaining_cards()
         self.agent_total = 0
         self.usable_ace = 0
         self.dealer_card = 0
         self.dealer_total = 0
         self.dealer_ace = 0
         self.current_state = 0
+        self.agent_natural = False
 
         # deal a face up card and a second card to the dealer
         self.dealer_card = self.deck.deal_card()
@@ -143,7 +148,7 @@ class Blackjack:
                 elif self.dealer_total < self.agent_total:
                     # agent wins
                     new_state = 203
-                    reward = 1*bet_size
+                    reward = 1.5*bet_size if self.agent_natural else 1*bet_size
                     game_end = True
                 else:
                     # tie

@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def initialize_agent(environment, args):
     if args.algorithm == 'MCC':
         agent = MonteCarloControl(environment, args.gamma, args.epsilon)
@@ -15,16 +14,24 @@ def initialize_agent(environment, args):
 
 class BaseAgent:
     """BaseAgent comes with the ability to count cards using the hi-lo method."""
-    def __init__(self, env, hi_lo=False):
+    def __init__(self, env, hi_lo=False, bet_sizes=[1, 5, 10]):
         self.env = env
+        self.bet_sizes = bet_sizes
         self.num_states = env.get_number_of_states()
         self.num_actions = env.get_number_of_actions()
         self.hi_lo = hi_lo
         self.hi_lo_count = 0
         self.count_state = 0
+        self.bet_shape, self.action_shape = self.get_input_shape()
     
-    def get_true_count(self, cards):
-        for card in cards:
+    def get_input_shapes(self):
+            self.bet_shape = (30 if self.hi_lo else 1, len(self.bet_sizes))
+            self.action_shape = (30 if self.hi_lo else 1, self.num_states, self.num_actions)
+
+    def get_true_count(self):
+        if self.env.deck.fresh_deck:
+            self.hi_lo_count = 0
+        for card in self.env.open_cards:
             if card == 1 or card == 10:
                 self.hi_lo_count -= 1
             elif 2 <= card <= 6:
@@ -33,11 +40,13 @@ class BaseAgent:
         true_count = min(max(true_count, 0), 29)
         return true_count
 
+
 class MonteCarloControl(BaseAgent):
-    def __init__(self, env, hi_lo, gamma=1, epsilon=0.2):
-        super().__init__(env, hi_lo)
-        self.q_table = np.zeros((self.num_states, self.num_actions)) # initialize q_table with zeros
-        self.n_table = np.zeros((self.num_states, self.num_actions)) # initialize n_table with zeros
+    def __init__(self, env, hi_lo, bet_sizes, gamma=1, epsilon=0.2):
+        super().__init__(env, hi_lo, bet_sizes)
+        shape = self.get_table_shape()
+        self.q_table, self.n_table = np.zeros(self.action_shape), np.zeros(self.action_shape)
+        self.bet_q_table, self.bet_n_table = np.zeros(self.bet_shape), np.zeros(self.bet_shape)
         self.gamma = gamma
         self.epsilon = epsilon
         self.trajectory = []
@@ -62,11 +71,11 @@ class MonteCarloControl(BaseAgent):
         else: # explore
             return np.random.randint(0, self.num_actions)
     
-    def select_bet_size(self, open_cards):
-        self.count_state = self.get_true_count(open_cards) if self.hi_lo else self.count_state
-        actions = self.q[self.count_state][200, ]
+    def select_bet_size(self):
+        self.count_state = self.get_true_count() if self.hi_lo else self.count_state
+        actions = self.bet_q_table[self.count_state, ]
         action = self.e_greedy(actions)
-        return self.env.bet_sizes[action]
+        return self.bet_sizes[action]
 
     def select_action(self, state):
         actions = self.q_table[state, ]
@@ -106,9 +115,10 @@ class MonteCarloControl(BaseAgent):
 
 
 class QLearning(BaseAgent):
-    def __init__(self, env, hi_lo, alpha=0.1, gamma=1, epsilon=0.2):
-        super().__init__(env, hi_lo)
-        self.q_table = np.zeros((self.num_states, self.num_actions)) # initialize q_table with zeros
+    def __init__(self, env, hi_lo, bet_sizes, alpha=0.1, gamma=1, epsilon=0.2):
+        super().__init__(env, hi_lo, bet_sizes)
+        self.q_table = np.zeros(self.action_shape)
+        self.bet_q_table = np.zeros(self.bet_shape)
         self.alpha = alpha # learning rate
         self.gamma = gamma # discount rate
         self.epsilon = epsilon # exploration probability threshold
@@ -126,7 +136,13 @@ class QLearning(BaseAgent):
         if b > self.epsilon: # exploit
             return np.argmax(actions)
         else: # explore
-            return np.random.randint(0, self.num_actions) 
+            return np.random.randint(0, self.num_actions)
+    
+    def select_bet_size(self):
+        self.count_state = self.get_true_count() if self.hi_lo else self.count_state
+        actions = self.bet_q_table[self.count_state, ]
+        action = self.e_greedy(actions)
+        return self.bet_sizes[action]
 
     def select_action(self, state):
         if self.hi_lo:

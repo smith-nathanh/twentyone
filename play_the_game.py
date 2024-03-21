@@ -56,7 +56,7 @@ def main():
         for episode in range(args.num_episodes):
             current_state = environment.reset()
             game_end = False
-            bet_size = agent.select_bet_size(environment.open_cards)
+            bet_size = agent.select_bet_size()
             while not game_end:
                 action = agent.select_action(current_state)
                 new_state, reward, game_end = environment.execute_action(action, bet_size)
@@ -71,7 +71,7 @@ def main():
             agent.epsilon = agent.epsilon*math.exp(math.log(0.01/agent.epsilon)/args.num_episodes) if args.decay_epsilon else agent.epsilon
 
             # record a win if episode ended with a reward
-            wins += 1 if reward == 1 else 0
+            wins += 1 if reward > 1 else 0
             cumulative_reward += reward
 
             # record the metrics
