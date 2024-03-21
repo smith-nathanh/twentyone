@@ -12,8 +12,8 @@ Date:
 
 import math
 import numpy as np
-import agent_mc as ag2
-import environment as env2
+import Project2_agent as ag2
+import Project2_env as env2
 
 
 def get_agent_hand(state):
@@ -74,23 +74,25 @@ def play_blackjack(num_episodes, epsilon, decay_epsilon, hi_lo):
 
     # each episode
     while True:
-        # reset the environment and observe the current state and new_deck; the latter is True
-        # if we are on to a new set of decks
-        current_state, open_cards = environment.reset()
-
-        hi_lo_count += adjust_count(open_cards)
-
         # at the start of each hand, we reset the agent's policy and retrieve the bet size
         true_count = round(hi_lo_count/(len(environment.deck.cards)/52)) + 15
         true_count = max(true_count, 0)
         true_count = min(true_count, 29)
         # print(true_count)
 
-        bet_size = agent.reset_policy(true_count)
+        bet_size, action = agent.reset_policy(true_count)
+
+        # reset the environment and observe the current state and new_deck; the latter is True
+        # if we are on to a new set of decks
+        current_state, open_cards = environment.reset()
+
+        hi_lo_count += adjust_count(open_cards)
 
         reward = 0
         if current_state == 203: # occurs only from natural blackjack, which pays 1.5x
-            reward = 1.5 * bet_size
+            reward = 3 * bet_size # CHANGE BACK TO 1.5 FOR 3:2
+        total_return += reward
+        agent.store_policy(200, action, reward)
 
         # Do until the game ends:
         while current_state < 200:
@@ -145,8 +147,8 @@ def play_blackjack(num_episodes, epsilon, decay_epsilon, hi_lo):
 if __name__ == "__main__":
 
     # we test epsilon in three ways; the first feature is the initial epsilon value, the second is whether to decay epsilon
-    epsilon_choice = [[0.3, True]] # [0.2, False], [0.1, False],
-    
+    epsilon_choice = [[0.2, False]] # [0.2, False], [0.1, False],
+
     hi_lo = True
 
     with open('output.txt', 'wt') as f:
@@ -156,8 +158,8 @@ if __name__ == "__main__":
             num_episodes = 100000
             num_agents = 1
             all_player_return = np.zeros(num_episodes, dtype="float64")
-            all_player_q_values = np.zeros((204, 3), dtype="float64")
-            all_player_q_count = np.zeros((201, 3), dtype="float64")
+            all_player_q_values = np.zeros((204, 2), dtype="float64")
+            all_player_q_count = np.zeros((201, 2), dtype="float64")
 
             # for each agent, play blackjack and increment variables that track win rate, cumulative return, and state visit rate
             # at each episode
@@ -184,9 +186,9 @@ if __name__ == "__main__":
                     if idx == 200:
                         print(f'\nbet_1 value, bet_5 value, bet_10 value', file=f)
                         print(row[0]/num_agents, row[1]/num_agents, row[2]/num_agents, sep=',', file=f)
-            
+
             for idx, row in enumerate(q_values):
-                print(f'\nbet_1 value, bet_5 value, bet_10 value', file=f)
-                print(row[200][0]/num_agents, row[200][1]/num_agents, row[200][2]/num_agents, sep=',', file=f)
+                print(f'\nbet_1 value, bet_10 value', file=f)
+                print(row[200][0]/num_agents, row[200][1]/num_agents, q_count[idx][200][0], q_count[idx][200][1], sep=',', file=f)
 
 
