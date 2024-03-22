@@ -1,11 +1,9 @@
 # source: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
-import math
 import random
 from collections import namedtuple, deque
-import environment 
+import environment
 import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,8 +13,7 @@ import torch.nn.functional as F
 # if GPU is to be used
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+Transition = namedtuple('Transition',('state', 'action', 'next_state', 'reward'))
 
 
 class ReplayMemory(object):
@@ -78,9 +75,9 @@ def get_dealer_hand(state):
 # LR is the learning rate of the ``AdamW`` optimizer
 BATCH_SIZE = 128
 GAMMA = 0.99
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 1000
+# EPS_START = 0.9
+# EPS_END = 0.05
+# EPS_DECAY = 1000
 TAU = 0.005
 LR = 1e-4
 
@@ -95,16 +92,15 @@ target_net.load_state_dict(policy_net.state_dict())
 optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
 memory = ReplayMemory(10000)
 
+#steps_done = 0
 
-steps_done = 0
 
-
-def select_action(state):
-    global steps_done
+def select_action(state, eps_threshold):
+    # global steps_done
     sample = random.random()
-    eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-        math.exp(-1. * steps_done / EPS_DECAY)
-    steps_done += 1
+    # eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+    #    math.exp(-1. * steps_done / EPS_DECAY)
+    # steps_done += 1
     if sample > eps_threshold:
         with torch.no_grad():
             # t.max(1) will return the largest column value of each row.
@@ -113,9 +109,6 @@ def select_action(state):
             return policy_net(state).max(1).indices.view(1, 1)
     else:
         return torch.tensor([[random.randint(0,1)]], device=device, dtype=torch.long)
-
-
-episode_durations = []
 
 
 def optimize_model():
@@ -160,114 +153,138 @@ def optimize_model():
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
+
     # In-place gradient clipping
     torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
     optimizer.step()
 
 
-if torch.cuda.is_available():
-    num_episodes = 600
-else:
-    num_episodes = 600 #50
+def adjust_count(cards):
+    count = 0
+    for card in cards:
+        if card == 1 or card == 10:
+            count -= 1
+        elif 2 <= card <= 6:
+            count += 1
+    return count
 
-total_return = 0
-hand_count = 0
-cur_episode = 0
 
-while True:
-    hand_count += 1
-    # Initialize the environment and get its state
-    deck_state = np.array(env.get_card_state(), dtype=float)
-    deck_state /= 96
-    agent_hand = 0
-    agent_ace = 0
-    dealer_hand = 0
-    betting_phase = 1
+def get_true_count(hi_lo, decks_remaining):
+    true_count = round(hi_lo/decks_remaining) + 15
+    true_count = max(true_count, 0)
+    true_count = min(true_count, 29)
+
+    return true_count
+
+
+def create_tensor_state(deck_state, agent_hand, agent_ace, dealer_hand, betting_phase):
     starting_state = np.concatenate((deck_state, [agent_hand], [agent_ace], [dealer_hand], [betting_phase]))
-    starting_state = torch.tensor(starting_state, dtype=torch.float32, device=device).unsqueeze(0)
-    action = select_action(starting_state)
+    return torch.tensor(starting_state, dtype=torch.float32, device=device).unsqueeze(0)
 
-    bet_size = 1
-    if action == 1:
-        bet_size = 10
 
-    hand_state, _ = env.reset()
-    reward = 0
-    opening_action = False
-    if hand_state == 203:
-        reward = 3 * bet_size
-        total_return += reward
-        reward = torch.tensor([reward], device=device)
-        memory.push(starting_state, action, None, reward)
-        target_net_state_dict = target_net.state_dict()
-        policy_net_state_dict = policy_net.state_dict()
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
-        target_net.load_state_dict(target_net_state_dict)
+def process_transition(reward, starting_state, action, next_state):
+    reward = torch.tensor([reward], device=device)
+    memory.push(starting_state, action, next_state, reward)
+    optimize_model()
+    target_net_state_dict = target_net.state_dict()
+    policy_net_state_dict = policy_net.state_dict()
+    for key in policy_net_state_dict:
+        target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
+    target_net.load_state_dict(target_net_state_dict)
 
-    opening_action = True
-    agent_hand, agent_ace = get_agent_hand(hand_state)
-    agent_hand /= 10
-    dealer_hand = get_dealer_hand(hand_state)
-    betting_phase = 0
-    deck_state = np.array(env.get_card_state(), dtype=float)
-    deck_state /= 96
-    state = np.concatenate((deck_state, [agent_hand], [agent_ace], [dealer_hand], [betting_phase]))
-    state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
 
-    while hand_state < 200:
-        if opening_action:
-            opening_action = False
-            reward = torch.tensor([0], device=device)
-            memory.push(starting_state, action, state, reward)
-            optimize_model()
-            target_net_state_dict = target_net.state_dict()
-            policy_net_state_dict = policy_net.state_dict()
-            for key in policy_net_state_dict:
-                target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
-            target_net.load_state_dict(target_net_state_dict)
+def play_blackjack(env, model, eps_threshold):
+    with open('output.txt', 'w') as file:
+        policy_net = model.to(device)
+        target_net.load_state_dict(policy_net.state_dict())
 
-        action = select_action(state)
+        if torch.cuda.is_available():
+            num_episodes = 1200
+        else:
+            num_episodes = 1200
 
-        hand_state, reward, _ = env.execute_action(action)
-        reward *= bet_size
-        total_return += reward
-        reward = torch.tensor([reward], device=device)
-        agent_hand, agent_ace_new = get_agent_hand(hand_state)
-        agent_hand /= 10
-        deck_state = np.array(env.get_card_state(), dtype=float)
-        deck_state /= 96
-        state_new = np.concatenate((deck_state, [agent_hand], [agent_ace_new], [dealer_hand], [betting_phase]))
-
-        next_state = torch.tensor(state_new, dtype=torch.float32, device=device).unsqueeze(0)
-
-        # Store the transition in memory
-        memory.push(state, action, next_state, reward)
-
-        # Move to the next state
-        state = next_state
-
-        # Perform one step of the optimization (on the policy network)
-        optimize_model()
-
-        # Soft update of the target network's weights
-        # θ′ ← τ θ + (1 −τ )θ′
-        target_net_state_dict = target_net.state_dict()
-        policy_net_state_dict = policy_net.state_dict()
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
-        target_net.load_state_dict(target_net_state_dict)
-
-    if len(env.deck.cards) < 125:
-        print(cur_episode, total_return/hand_count)
-        cur_episode += 1
-        if cur_episode > num_episodes:
-            break
         total_return = 0
         hand_count = 0
-        env = environment.Blackjack()
+        cur_episode = 0
+        hi_lo = 0
+
+        while True:
+            true_count = get_true_count(hi_lo, (len(env.deck.cards)/52))
+            hand_count += 1
+            deck_state = np.array(env.get_card_state(), dtype=float)/96
+            starting_state = create_tensor_state(deck_state, 0, 0, 0, 1)
+            action = select_action(starting_state, eps_threshold)
+
+            bet_size = 1
+            if action.item() == 1:
+                bet_size = 10
+
+            hand_state, open_cards = env.reset()
+            hi_lo += adjust_count(open_cards)
+
+            if cur_episode >= num_episodes*0.9:
+                print(cur_episode, true_count, bet_size, sep=',', file=file)
+
+            if hand_state == 203:
+                reward = 3 * bet_size
+                total_return += reward
+                process_transition(reward, starting_state, action, None)
+
+            opening_action = True
+            agent_hand, agent_ace = get_agent_hand(hand_state)
+            dealer_hand = get_dealer_hand(hand_state)
+            deck_state = np.array(env.get_card_state(), dtype=float)/96
+            state = create_tensor_state(deck_state, agent_hand/10, agent_ace, dealer_hand/10, 0)
+
+            while hand_state < 200:
+                if opening_action:
+                    opening_action = False
+                    reward = torch.tensor([0], device=device)
+                    process_transition(reward, starting_state, action, state)
+
+                action = select_action(state, eps_threshold)
+
+                #if cur_episode >= num_episode*0.9:
+                #    print(cur_episode, agent_hand*10+11, agent_ace, dealer_hand*10, action.item(), sep=',', file=file)
+
+                hand_state, reward, open_cards = env.execute_action(action)
+                hi_lo += adjust_count(open_cards)
+
+                reward *= bet_size
+                total_return += reward
+                reward = torch.tensor([reward], device=device)
+                agent_hand, agent_ace_new = get_agent_hand(hand_state)
+                deck_state = np.array(env.get_card_state(), dtype=float)
+                next_state = create_tensor_state(deck_state/96, agent_hand/10, agent_ace, dealer_hand/10, 0)
+                process_transition(reward, state, action, next_state)
+
+                # Move to the next state
+                state = next_state
+
+            if len(env.deck.cards) < 125:
+                # print(cur_episode, total_return/hand_count, sep=',', file=file)
+                cur_episode += 1
+                if cur_episode > num_episodes:
+                    break
+                total_return = 0
+                hand_count = 0
+                env = environment.Blackjack()
+                hi_lo = 0
+                if cur_episode > num_episodes*0.9:
+                    eps_threshold = 0
+
+        torch.save(target_net.state_dict(), 'dqn_model_4.pth')  # Saves the PyTorch model weights
+
+        print('Complete')
 
 
-torch.save(target_net.state_dict(), 'dqn_model.pth')  # Saves the PyTorch model weights
+def reload_model(env):
+    model = DQN(n_observations, n_actions)
+    model.load_state_dict(torch.load('dqn_model.pth'))
+    play_blackjack(env, model, 0.2)
 
-print('Complete')
+
+model = DQN(n_observations, n_actions)
+play_blackjack(env, model, 0.2)
+
+
