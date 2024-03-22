@@ -9,17 +9,19 @@ class CardDeck:
         self.standard_deck = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,
                                 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10,
                                 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
-        self.cards = self.refresh_the_deck()
         self.num_decks = num_decks
+        self.cards = self.refresh_the_deck()
         self.fresh_deck = True
+        self.refresh_threshold = 0.4*52*num_decks
 
     def refresh_the_deck(self):
-        self.cards = np.random.shuffle([card for card in self.standard_deck for _ in range(self.num_decks)])
+        new_deck = [card for card in self.standard_deck for _ in range(self.num_decks)]
+        return random.sample(new_deck, len(new_deck))
 
-    def check_remaining_cards(self):
-        self.fresh_deck = False if len(self.cards) > len(self.cards)*.4 else True
+    def check_deck_length(self):
+        self.fresh_deck = False if len(self.cards) > self.refresh_threshold else True
         if self.fresh_deck:
-            self.refresh_the_deck()
+            self.cards = self.refresh_the_deck()
 
     def deal_card(self):
         return self.cards.pop(0)
@@ -68,7 +70,7 @@ class Blackjack:
         return new_state
 
     def reset(self):
-        self.deck.check_remaining_cards()
+        self.deck.check_deck_length()
         self.agent_total = 0
         self.usable_ace = 0
         self.dealer_card = 0

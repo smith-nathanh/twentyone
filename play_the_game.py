@@ -16,6 +16,7 @@ def main():
         --algorithm: The algorithm to use: MCC, Q, or DQ
         --num_agents: Number of agents to train
         --num_episodes: Number of episodes to play
+        --hilo: Flag for agent to use hi-lo card counting or not
         --alpha: Learning rate
         --gamma: Discount factor 
         --epsilon: Exploration probability threshold
@@ -35,6 +36,7 @@ def main():
     parser.add_argument("--algorithm", type=str, default="MCC", help="The algorithm to use: MCC, Q, or DQ")
     parser.add_argument("--num_agents", type=int, default=10, help="Number of agents to train")
     parser.add_argument("--num_episodes", type=int, default=2000, help="Number of episodes to play")
+    parser.add_argument("--hilo", action='store_true', default=False, required=False, help="Flag for agent to use hi-lo card counting or not.")
     parser.add_argument("--alpha", type=float, required=False, default=None, help="Learning rate")
     parser.add_argument("--gamma", type=float, required=False, default=0.9, help="Discount factor")
     parser.add_argument("--epsilon", type=float, required=False, default=0.2, help="Exploration probability threshold")
@@ -77,6 +79,7 @@ def main():
             # record the metrics
             metrics['Win_Percentage'].append(wins/(episode+1))
             metrics['Cumulative_Reward'].append(cumulative_reward)
+            metrics['Bet_Sizes'].append(bet_size)
 
             # print metrics
             if episode % 100 == 0 or episode == args.num_episodes - 1:
